@@ -94,7 +94,7 @@ function createOverlay() {
   const style = document.createElement('style');
   style.textContent = `
     :host {
-      --glass-background: rgba(0, 0, 0, 0.1); 
+      --glass-background: transparent; 
       --glass-blur: 24px;
       --glass-saturation: 180%;
       --glass-brightness: 1.1;
