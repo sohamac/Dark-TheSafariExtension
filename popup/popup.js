@@ -1,36 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const toggle = document.getElementById('dark-mode-toggle');
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const extremeModeToggle = document.getElementById('extreme-mode-toggle');
     const statusEl = document.getElementById('status');
 
     // Load saved state
-    chrome.storage.local.get(['darkMode'], (result) => {
-        const isEnabled = result.darkMode || false;
-        toggle.checked = isEnabled;
-        updateStatusLabel(isEnabled);
+    chrome.storage.local.get(['darkMode', 'extremeMode'], (result) => {
+        darkModeToggle.checked = result.darkMode || false;
+        extremeModeToggle.checked = result.extremeMode || false;
+        updateStatusLabel(darkModeToggle.checked, extremeModeToggle.checked);
     });
 
-    // Handle toggle change
-    toggle.addEventListener('change', () => {
-        const isEnabled = toggle.checked;
+    // Handle Dark Mode toggle
+    darkModeToggle.addEventListener('change', () => {
+        const isDark = darkModeToggle.checked;
+        const isExtreme = extremeModeToggle.checked;
 
-        // Save to storage
-        chrome.storage.local.set({ darkMode: isEnabled });
-        updateStatusLabel(isEnabled);
+        chrome.storage.local.set({ darkMode: isDark });
+        broadcastMessage(isDark, isExtreme);
+        updateStatusLabel(isDark, isExtreme);
+    });
 
-        // Notify ALL tabs for instant update
+    // Handle Extreme Mode toggle
+    extremeModeToggle.addEventListener('change', () => {
+        const isDark = darkModeToggle.checked;
+        const isExtreme = extremeModeToggle.checked;
+
+        chrome.storage.local.set({ extremeMode: isExtreme });
+        broadcastMessage(isDark, isExtreme);
+        updateStatusLabel(isDark, isExtreme);
+    });
+
+    function broadcastMessage(enabled, extreme) {
         chrome.tabs.query({}, (tabs) => {
             tabs.forEach(tab => {
-                // We use a try-catch or silence errors for tabs where script isn't loaded
                 chrome.tabs.sendMessage(tab.id, {
-                    action: "toggleDarkMode",
-                    enabled: isEnabled
+                    action: "updateConfig",
+                    enabled: enabled,
+                    extreme: extreme
                 }).catch(() => { });
             });
         });
-    });
+    }
 
-    function updateStatusLabel(enabled) {
-        statusEl.textContent = enabled ? 'ON' : 'OFF';
-        statusEl.style.color = enabled ? '#0071e3' : '#86868b';
+    function updateStatusLabel(enabled, extreme) {
+        if (!enabled) {
+            statusEl.textContent = 'OFF';
+            statusEl.style.color = '#86868b';
+        } else {
+            statusEl.textContent = extreme ? 'EXTREME ON' : 'ON';
+            statusEl.style.color = '#0071e3';
+        }
     }
 });

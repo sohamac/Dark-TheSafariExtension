@@ -13,10 +13,22 @@
     <h1>Quest Dark Mode</h1>
     <p>Enable or disable dark mode across all websites.</p>
 
-    <label class="switch">
-      <input type="checkbox" id="dark-mode-toggle">
-      <span class="slider round"></span>
-    </label>
+    <div class="setting">
+      <span>Dark Mode</span>
+      <label class="switch">
+        <input type="checkbox" id="dark-mode-toggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    <div class="setting extreme">
+      <span>Extreme Mode (Pro)</span>
+      <label class="switch">
+        <input type="checkbox" id="extreme-mode-toggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
+    <p class="warning">⚠️ Extreme Mode may consume more battery.</p>
 
     <div id="status">Off</div>
   </div>
