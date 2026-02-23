@@ -5,10 +5,10 @@ body {
   /* Apple System Font Stack */
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #ffffff;
-  /* Vibrant Dark Glassmorphism */
-  background: rgba(25, 25, 25, 0.75);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  /* Vibrant Dark Glassmorphism - Enhanced Translucency */
+  background: rgba(20, 20, 22, 0.45);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
   overflow: hidden;
   border-radius: 16px;
 }
