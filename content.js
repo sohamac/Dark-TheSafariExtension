@@ -5,19 +5,20 @@ function isPageAlreadyDark() {
 
     // 2. Check html/body data attributes or classes common in dark modes
     const darkIndicators = ['dark', 'night', 'theme-dark', 'dark-mode'];
-    const bodyData = JSON.stringify(document.body.dataset).toLowerCase();
+    const bodyData = document.body ? JSON.stringify(document.body.dataset).toLowerCase() : '';
     const htmlData = JSON.stringify(document.documentElement.dataset).toLowerCase();
+
     if (darkIndicators.some(indicator =>
         document.documentElement.classList.contains(indicator) ||
-        document.body.classList.contains(indicator) ||
+        (document.body && document.body.classList.contains(indicator)) ||
         bodyData.includes(indicator) ||
         htmlData.includes(indicator)
     )) return true;
 
     // 3. Precise Color analysis
-    const getBG = (el) => window.getComputedStyle(el).backgroundColor;
+    const getBG = (el) => el ? window.getComputedStyle(el).backgroundColor : null;
     let bgColor = getBG(document.documentElement);
-    if (bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
+    if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
         bgColor = getBG(document.body);
     }
 
@@ -31,7 +32,7 @@ function isPageAlreadyDark() {
     const r = parseInt(rgb[0]), g = parseInt(rgb[1]), b = parseInt(rgb[2]);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-    return luminance < 0.4; // Slightly lower threshold for "dark"
+    return luminance < 0.4;
 }
 
 function applyDarkMode(enabled) {
@@ -47,18 +48,25 @@ function applyDarkMode(enabled) {
         if (!styleEl) {
             styleEl = document.createElement('style');
             styleEl.id = styleId;
+            // We use ONLY visual filters to ensure ZERO layout or content interference.
             styleEl.textContent = `
         html { 
           filter: invert(1) hue-rotate(180deg) !important;
+          /* Setting a background color provides a solid canvas for inversion without layout impact */
           background-color: #ffffff !important; 
         }
+        
+        /* Re-invert media content and known dark components */
         img, video, canvas, [style*="background-image"], .no-invert { 
           filter: invert(1) hue-rotate(180deg) !important; 
         }
-        /* Fix for JioHotstar and similar gradient/overlay issues */
-        [class*="gradient"], [class*="overlay"], [class*="mask"] {
-           filter: none !important;
+
+        /* Compatibility: Prevent filters from breaking complex fixed/absolute layout layers */
+        header, footer, nav, [class*="fixed"], [class*="overlay"] {
+           /* Inversion happens at html level, so nested filters are kept to a minimum */
         }
+        
+        /* Transition for a premium feel, strictly visual */
         html { transition: filter 0.2s ease-in-out; }
       `;
             (document.head || document.documentElement).appendChild(styleEl);
