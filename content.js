@@ -5,56 +5,56 @@ let questOverlay = null;
 // --- CORE DARK MODE ENGINE ---
 
 function isPageAlreadyDark() {
-    const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
-    if (metaColorScheme && metaColorScheme.content.includes('dark')) return true;
+  const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
+  if (metaColorScheme && metaColorScheme.content.includes('dark')) return true;
 
-    const darkIndicators = ['dark', 'night', 'theme-dark', 'dark-mode'];
-    const bodyData = document.body ? JSON.stringify(document.body.dataset).toLowerCase() : '';
-    const htmlData = JSON.stringify(document.documentElement.dataset).toLowerCase();
+  const darkIndicators = ['dark', 'night', 'theme-dark', 'dark-mode'];
+  const bodyData = document.body ? JSON.stringify(document.body.dataset).toLowerCase() : '';
+  const htmlData = JSON.stringify(document.documentElement.dataset).toLowerCase();
 
-    if (darkIndicators.some(indicator =>
-        document.documentElement.classList.contains(indicator) ||
-        (document.body && document.body.classList.contains(indicator)) ||
-        bodyData.includes(indicator) ||
-        htmlData.includes(indicator)
-    )) return true;
+  if (darkIndicators.some(indicator =>
+    document.documentElement.classList.contains(indicator) ||
+    (document.body && document.body.classList.contains(indicator)) ||
+    bodyData.includes(indicator) ||
+    htmlData.includes(indicator)
+  )) return true;
 
-    const getBG = (el) => el ? window.getComputedStyle(el).backgroundColor : null;
-    let bgColor = getBG(document.documentElement);
-    if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
-        bgColor = getBG(document.body);
-    }
+  const getBG = (el) => el ? window.getComputedStyle(el).backgroundColor : null;
+  let bgColor = getBG(document.documentElement);
+  if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
+    bgColor = getBG(document.body);
+  }
 
-    if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') return false;
+  if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') return false;
 
-    const rgb = bgColor.match(/\d+/g);
-    if (!rgb || rgb.length < 3) return false;
+  const rgb = bgColor.match(/\d+/g);
+  if (!rgb || rgb.length < 3) return false;
 
-    const r = parseInt(rgb[0]), g = parseInt(rgb[1]), b = parseInt(rgb[2]);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const r = parseInt(rgb[0]), g = parseInt(rgb[1]), b = parseInt(rgb[2]);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-    return luminance < 0.4;
+  return luminance < 0.4;
 }
 
 function applyDarkMode(enabled, extreme) {
-    const styleId = 'quest-dark-mode-style';
-    let styleEl = document.getElementById(styleId);
+  const styleId = 'quest-dark-mode-style';
+  let styleEl = document.getElementById(styleId);
 
-    if (observer) {
-        observer.disconnect();
-        observer = null;
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+
+  if (enabled) {
+    if (isPageAlreadyDark()) {
+      if (styleEl) styleEl.remove();
+      return;
     }
 
-    if (enabled) {
-        if (isPageAlreadyDark()) {
-            if (styleEl) styleEl.remove();
-            return;
-        }
-
-        if (!styleEl) {
-            styleEl = document.createElement('style');
-            styleEl.id = styleId;
-            styleEl.textContent = `
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      styleEl.textContent = `
         html { 
           filter: invert(1) hue-rotate(180deg) !important;
           background-color: #ffffff !important; 
@@ -67,34 +67,34 @@ function applyDarkMode(enabled, extreme) {
         }
         html { transition: filter 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
       `;
-            (document.head || document.documentElement).appendChild(styleEl);
-        }
-
-        if (extreme) {
-            observer = new MutationObserver(() => { });
-            observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
-        }
-    } else {
-        if (styleEl) styleEl.remove();
+      (document.head || document.documentElement).appendChild(styleEl);
     }
+
+    if (extreme) {
+      observer = new MutationObserver(() => { });
+      observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+    }
+  } else {
+    if (styleEl) styleEl.remove();
+  }
 }
 
 // --- OVERLAY UI CORE ---
 
 function createOverlay() {
-    if (questOverlay) return;
+  if (questOverlay) return;
 
-    const container = document.createElement('div');
-    container.id = 'quest-overlay-container';
+  const container = document.createElement('div');
+  container.id = 'quest-overlay-container';
 
-    // Use Shadow DOM to isolate styles and prevent leakage
-    const shadow = container.attachShadow({ mode: 'closed' });
-    questOverlay = container;
+  // Use Shadow DOM to isolate styles and prevent leakage
+  const shadow = container.attachShadow({ mode: 'closed' });
+  questOverlay = container;
 
-    const style = document.createElement('style');
-    style.textContent = `
+  const style = document.createElement('style');
+  style.textContent = `
     :host {
-      --glass-background: rgba(25, 25, 25, 0.45);
+      --glass-background: rgba(0, 0, 0, 0);
       --glass-blur: 50px;
       --glass-saturation: 210%;
       --apple-green: #30d158;
@@ -173,9 +173,9 @@ function createOverlay() {
     #status { font-size: 0.65rem; color: var(--text-sec); text-align: center; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
   `;
 
-    const panel = document.createElement('div');
-    panel.className = 'glass-panel';
-    panel.innerHTML = `
+  const panel = document.createElement('div');
+  panel.className = 'glass-panel';
+  panel.innerHTML = `
     <h1>Quest Dark Mode</h1>
     <p>Premium Visual Content Overlay</p>
     
@@ -204,66 +204,66 @@ function createOverlay() {
     <div id="status-label">OFF</div>
   `;
 
-    shadow.appendChild(style);
-    shadow.appendChild(panel);
-    document.documentElement.appendChild(container);
+  shadow.appendChild(style);
+  shadow.appendChild(panel);
+  document.documentElement.appendChild(container);
 
-    // Logic for the Injected UI
-    const darkT = shadow.getElementById('dark-toggle');
-    const extremeT = shadow.getElementById('extreme-toggle');
-    const dIcon = shadow.querySelector('.icon-dark');
-    const eIcon = shadow.querySelector('.icon-extreme');
-    const sLabel = shadow.getElementById('status-label');
+  // Logic for the Injected UI
+  const darkT = shadow.getElementById('dark-toggle');
+  const extremeT = shadow.getElementById('extreme-toggle');
+  const dIcon = shadow.querySelector('.icon-dark');
+  const eIcon = shadow.querySelector('.icon-extreme');
+  const sLabel = shadow.getElementById('status-label');
 
-    chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
-        darkT.checked = res.darkMode || false;
-        extremeT.checked = res.extremeMode || false;
-        updateUIState(darkT.checked, extremeT.checked);
-    });
+  chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
+    darkT.checked = res.darkMode || false;
+    extremeT.checked = res.extremeMode || false;
+    updateUIState(darkT.checked, extremeT.checked);
+  });
 
-    const sync = () => {
-        chrome.storage.local.set({ darkMode: darkT.checked, extremeMode: extremeT.checked });
-        applyDarkMode(darkT.checked, extremeT.checked);
-        updateUIState(darkT.checked, extremeT.checked);
-    };
+  const sync = () => {
+    chrome.storage.local.set({ darkMode: darkT.checked, extremeMode: extremeT.checked });
+    applyDarkMode(darkT.checked, extremeT.checked);
+    updateUIState(darkT.checked, extremeT.checked);
+  };
 
-    darkT.addEventListener('change', sync);
-    extremeT.addEventListener('change', sync);
+  darkT.addEventListener('change', sync);
+  extremeT.addEventListener('change', sync);
 
-    function updateUIState(d, e) {
-        sLabel.textContent = d ? (e ? 'Extreme Active' : 'Active') : 'Off';
-        sLabel.style.color = d ? 'var(--apple-green)' : 'var(--text-sec)';
-        if (d) dIcon.classList.add('active-dark'); else dIcon.classList.remove('active-dark');
-        if (d && e) eIcon.classList.add('active-extreme'); else eIcon.classList.remove('active-extreme');
-    }
+  function updateUIState(d, e) {
+    sLabel.textContent = d ? (e ? 'Extreme Active' : 'Active') : 'Off';
+    sLabel.style.color = d ? 'var(--apple-green)' : 'var(--text-sec)';
+    if (d) dIcon.classList.add('active-dark'); else dIcon.classList.remove('active-dark');
+    if (d && e) eIcon.classList.add('active-extreme'); else eIcon.classList.remove('active-extreme');
+  }
 }
 
 function toggleOverlay() {
-    if (!questOverlay) createOverlay();
+  if (!questOverlay) createOverlay();
 
-    overlayVisible = !overlayVisible;
-    if (overlayVisible) {
-        questOverlay.classList.add('visible');
-    } else {
-        questOverlay.classList.remove('visible');
-    }
+  overlayVisible = !overlayVisible;
+  if (overlayVisible) {
+    questOverlay.classList.add('visible');
+  } else {
+    questOverlay.classList.remove('visible');
+  }
 }
 
 // --- MESSAGING & INITIALIZATION ---
 
 chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.action === "toggleOverlay") {
-        toggleOverlay();
-    }
+  if (msg.action === "toggleOverlay") {
+    toggleOverlay();
+  }
 });
 
 // Load state silently on start
 chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
-    if (res.darkMode) {
-        if (document.readyState === 'loading') {
-            window.addEventListener('DOMContentLoaded', () => applyDarkMode(true, res.extremeMode));
-        } else {
-            applyDarkMode(true, res.extremeMode);
-        }
+  if (res.darkMode) {
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', () => applyDarkMode(true, res.extremeMode));
+    } else {
+      applyDarkMode(true, res.extremeMode);
     }
+  }
 });
