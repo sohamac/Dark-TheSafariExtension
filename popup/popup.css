@@ -1,27 +1,35 @@
 body {
   width: 240px;
-  padding: 20px;
+  padding: 0;
+  margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #f5f5f7;
   color: #1d1d1f;
-  text-align: left;
+  /* Liquid Glass Base */
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  overflow: hidden;
 }
 
 .container {
+  padding: 20px;
   display: flex;
   flex-direction: column;
 }
 
 h1 {
   font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 0;
   margin-bottom: 4px;
   text-align: center;
+  letter-spacing: -0.01em;
 }
 
 p {
   font-size: 0.8rem;
-  color: #86868b;
-  margin-bottom: 16px;
+  color: #48484a;
+  margin-bottom: 20px;
   text-align: center;
 }
 
@@ -30,37 +38,60 @@ p {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.setting:active {
+  transform: scale(0.98);
 }
 
 .label-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .icon {
-  width: 16px;
-  height: 16px;
-  color: #1d1d1f;
+  width: 18px;
+  height: 18px;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  stroke: #86868b;
+}
+
+/* Icon Color Fills */
+input:checked~.slider+.icon,
+/* This selector logic is based on sibling order if changed, but we will use JS classes for safety */
+.active-dark {
+  stroke: #ebb400;
+  fill: rgba(235, 180, 0, 0.2);
+}
+
+.active-extreme {
+  stroke: #0071e3;
+  fill: rgba(0, 113, 227, 0.2);
 }
 
 .setting.extreme {
   margin-top: 8px;
-  border-top: 1px solid #d2d2d7;
+  border-top: none;
   padding-top: 12px;
 }
 
 .warning {
   font-size: 0.7rem;
   color: #ff9500;
-  margin-top: -8px;
+  margin-top: 4px;
   margin-bottom: 16px;
   text-align: center;
+  font-weight: 500;
 }
 
-/* Toggle Switch Styling */
+/* Apple-style Toggle Switch */
 .switch {
   position: relative;
   display: inline-block;
@@ -81,23 +112,25 @@ p {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
+  background-color: rgba(120, 120, 128, 0.16);
+  transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .4s;
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 input:checked+.slider {
-  background-color: #0071e3;
+  background-color: #34c759;
+  /* Apple Green for Active */
 }
 
 input:checked+.slider:before {
@@ -114,7 +147,9 @@ input:checked+.slider:before {
 
 #status {
   text-align: center;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #86868b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
 }
