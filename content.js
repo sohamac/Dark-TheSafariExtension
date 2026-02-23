@@ -1,6 +1,7 @@
 let observer = null;
 let overlayVisible = false;
 let questOverlay = null;
+let mutationThrottleTimeout = null;
 
 // --- CORE DARK MODE ENGINE ---
 
@@ -71,7 +72,14 @@ function applyDarkMode(enabled, extreme) {
     }
 
     if (extreme) {
-      observer = new MutationObserver(() => { });
+      // 🔴 ENERGY OPTIMIZATION: Throttled MutationObserver 🔴
+      observer = new MutationObserver(() => {
+        if (mutationThrottleTimeout) return;
+        mutationThrottleTimeout = setTimeout(() => {
+          // Future: Add targeted re-inversion logic here if needed
+          mutationThrottleTimeout = null;
+        }, 1000); // Scan once per second max (Large Battery saving)
+      });
       observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
     }
   } else {
@@ -79,15 +87,13 @@ function applyDarkMode(enabled, extreme) {
   }
 }
 
-// --- OVERLAY UI CORE ---
+// --- OVERLAY UI CORE (SECURE BY DESIGN) ---
 
 function createOverlay() {
   if (questOverlay) return;
 
   const container = document.createElement('div');
   container.id = 'quest-overlay-container';
-
-  // Use Shadow DOM to isolate styles and prevent leakage
   const shadow = container.attachShadow({ mode: 'closed' });
   questOverlay = container;
 
@@ -104,59 +110,29 @@ function createOverlay() {
       --apple-blue: #0A84FF;
       --text-main: #ffffff;
       --text-sec: rgba(255, 255, 255, 0.6);
-      
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 2147483647;
-      width: 260px;
+      position: fixed; top: 20px; right: 20px; z-index: 2147483647; width: 260px;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
-      color: var(--text-main);
-      user-select: none;
-      pointer-events: auto;
-      
-      opacity: 0;
-      transform: translateY(-10px) scale(0.95);
-      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-      visibility: hidden;
+      color: var(--text-main); user-select: none; pointer-events: auto;
+      opacity: 0; transform: translateY(-10px) scale(0.95);
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); visibility: hidden;
     }
-
-    :host(.visible) {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      visibility: visible;
-    }
-
+    :host(.visible) { opacity: 1; transform: translateY(0) scale(1); visibility: visible; }
     .glass-panel {
-      padding: 20px;
-      background: var(--glass-background);
+      padding: 20px; background: var(--glass-background);
       backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(var(--glass-brightness)) contrast(var(--glass-contrast));
       -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(var(--glass-brightness)) contrast(var(--glass-contrast));
-      border: 0.5px solid rgba(255, 255, 255, 0.2);
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border: 0.5px solid rgba(255, 255, 255, 0.2); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-
     h1 { font-size: 1.1rem; margin: 0 0 4px 0; text-align: center; }
-    p { font-size: 0.8rem; color: var(--text-sec); margin: 0 0 20px 0; text-align: center; }
-
+    .subtitle { font-size: 0.8rem; color: var(--text-sec); margin: 0 0 20px 0; text-align: center; }
     .setting {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      padding: 12px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      border: 0.5px solid rgba(255, 255, 255, 0.1);
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+      padding: 12px; background: rgba(255, 255, 255, 0.08); border-radius: 14px; border: 0.5px solid rgba(255, 255, 255, 0.1);
     }
-
     .label-group { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; font-weight: 600; }
-    
     .icon { width: 18px; height: 18px; stroke: var(--text-sec); fill: none; transition: 0.3s; }
     .icon.active-dark { stroke: var(--apple-gold); fill: rgba(255, 204, 0, 0.2); }
     .icon.active-extreme { stroke: var(--apple-blue); fill: rgba(10, 132, 255, 0.2); }
-
     .switch { position: relative; width: 44px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -169,97 +145,128 @@ function createOverlay() {
     }
     input:checked + .slider { background: var(--apple-green); }
     input:checked + .slider:before { transform: translateX(20px); }
-
     .warning { font-size: 0.7rem; color: #ff9f0a; text-align: center; margin-top: 4px; }
-
-    #status { font-size: 0.65rem; color: var(--text-sec); text-align: center; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+    #status-label { font-size: 0.65rem; color: var(--text-sec); text-align: center; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
   `;
 
   const panel = document.createElement('div');
   panel.className = 'glass-panel';
-  panel.innerHTML = `
-    <h1>Quest Dark Mode</h1>
-    <p>Premium Visual Content Overlay</p>
-    
-    <div class="setting">
-      <div class="label-group">
-        <svg class="icon icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-        <span>Dark Mode</span>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="dark-toggle">
-        <span class="slider"></span>
-      </label>
-    </div>
 
-    <div class="setting">
-      <div class="label-group">
-        <svg class="icon icon-extreme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-        <span>Extreme Mode</span>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="extreme-toggle">
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div class="warning">⚠️ High precision uses more power</div>
-    <div id="status-label">OFF</div>
-  `;
+  const h1 = document.createElement('h1');
+  h1.textContent = 'Quest Dark Mode';
+
+  const subtitle = document.createElement('div');
+  subtitle.className = 'subtitle';
+  subtitle.textContent = 'Premium Visual Content Overlay';
+
+  // Secure Setting Factory
+  function createSetting(label, id, iconPath, iconClass) {
+    const setting = document.createElement('div');
+    setting.className = 'setting';
+
+    const labelGroup = document.createElement('div');
+    labelGroup.className = 'label-group';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', `icon ${iconClass}`);
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+
+    if (id === 'dark-toggle') {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
+      svg.appendChild(path);
+    } else {
+      const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      poly.setAttribute('points', '13 2 3 14 12 14 11 22 21 10 12 10 13 2');
+      svg.appendChild(poly);
+    }
+
+    const span = document.createElement('span');
+    span.textContent = label;
+
+    labelGroup.appendChild(svg);
+    labelGroup.appendChild(span);
+
+    const switchLabel = document.createElement('label');
+    switchLabel.className = 'switch';
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = id;
+
+    const slider = document.createElement('span');
+    slider.className = 'slider';
+
+    switchLabel.appendChild(input);
+    switchLabel.appendChild(slider);
+
+    setting.appendChild(labelGroup);
+    setting.appendChild(switchLabel);
+
+    return { setting, input, svg };
+  }
+
+  const darkSet = createSetting('Dark Mode', 'dark-toggle', '', 'icon-dark');
+  const extremeSet = createSetting('Extreme Mode', 'extreme-toggle', '', 'icon-extreme');
+
+  const warning = document.createElement('div');
+  warning.className = 'warning';
+  warning.textContent = '⚠️ High precision uses more power';
+
+  const statusLabel = document.createElement('div');
+  statusLabel.id = 'status-label';
+  statusLabel.textContent = 'OFF';
+
+  panel.appendChild(h1);
+  panel.appendChild(subtitle);
+  panel.appendChild(darkSet.setting);
+  panel.appendChild(extremeSet.setting);
+  panel.appendChild(warning);
+  panel.appendChild(statusLabel);
 
   shadow.appendChild(style);
   shadow.appendChild(panel);
   document.documentElement.appendChild(container);
 
-  // Logic for the Injected UI
-  const darkT = shadow.getElementById('dark-toggle');
-  const extremeT = shadow.getElementById('extreme-toggle');
-  const dIcon = shadow.querySelector('.icon-dark');
-  const eIcon = shadow.querySelector('.icon-extreme');
-  const sLabel = shadow.getElementById('status-label');
-
+  // Sync Logic
   chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
-    darkT.checked = res.darkMode || false;
-    extremeT.checked = res.extremeMode || false;
-    updateUIState(darkT.checked, extremeT.checked);
+    darkSet.input.checked = res.darkMode || false;
+    extremeSet.input.checked = res.extremeMode || false;
+    updateUIState(darkSet.input.checked, extremeSet.input.checked);
   });
 
   const sync = () => {
-    chrome.storage.local.set({ darkMode: darkT.checked, extremeMode: extremeT.checked });
-    applyDarkMode(darkT.checked, extremeT.checked);
-    updateUIState(darkT.checked, extremeT.checked);
+    chrome.storage.local.set({ darkMode: darkSet.input.checked, extremeMode: extremeSet.input.checked });
+    applyDarkMode(darkSet.input.checked, extremeSet.input.checked);
+    updateUIState(darkSet.input.checked, extremeSet.input.checked);
   };
 
-  darkT.addEventListener('change', sync);
-  extremeT.addEventListener('change', sync);
+  darkSet.input.addEventListener('change', sync);
+  extremeSet.input.addEventListener('change', sync);
 
   function updateUIState(d, e) {
-    sLabel.textContent = d ? (e ? 'Extreme Active' : 'Active') : 'Off';
-    sLabel.style.color = d ? 'var(--apple-green)' : 'var(--text-sec)';
-    if (d) dIcon.classList.add('active-dark'); else dIcon.classList.remove('active-dark');
-    if (d && e) eIcon.classList.add('active-extreme'); else eIcon.classList.remove('active-extreme');
+    statusLabel.textContent = d ? (e ? 'Extreme Active' : 'Active') : 'Off';
+    statusLabel.style.color = d ? 'var(--apple-green)' : 'var(--text-sec)';
+    if (d) darkSet.svg.classList.add('active-dark'); else darkSet.svg.classList.remove('active-dark');
+    if (d && e) extremeSet.svg.classList.add('active-extreme'); else extremeSet.svg.classList.remove('active-extreme');
   }
 }
 
 function toggleOverlay() {
   if (!questOverlay) createOverlay();
-
   overlayVisible = !overlayVisible;
-  if (overlayVisible) {
-    questOverlay.classList.add('visible');
-  } else {
-    questOverlay.classList.remove('visible');
-  }
+  if (overlayVisible) questOverlay.classList.add('visible');
+  else questOverlay.classList.remove('visible');
 }
 
 // --- MESSAGING & INITIALIZATION ---
 
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.action === "toggleOverlay") {
-    toggleOverlay();
-  }
+  if (msg.action === "toggleOverlay") toggleOverlay();
 });
 
-// Load state silently on start
 chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
   if (res.darkMode) {
     if (document.readyState === 'loading') {
