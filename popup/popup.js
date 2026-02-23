@@ -4,8 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load saved state
     chrome.storage.local.get(['darkMode'], (result) => {
-        toggle.checked = result.darkMode || false;
-        updateStatusLabel(toggle.checked);
+        const isEnabled = result.darkMode || false;
+        toggle.checked = isEnabled;
+        updateStatusLabel(isEnabled);
     });
 
     // Handle toggle change
@@ -16,15 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.storage.local.set({ darkMode: isEnabled });
         updateStatusLabel(isEnabled);
 
-        // Notify all tabs
+        // Notify ALL tabs for instant update
         chrome.tabs.query({}, (tabs) => {
             tabs.forEach(tab => {
+                // We use a try-catch or silence errors for tabs where script isn't loaded
                 chrome.tabs.sendMessage(tab.id, {
                     action: "toggleDarkMode",
                     enabled: isEnabled
-                }).catch(err => {
-                    // Ignore errors for tabs where extension can't run (like safari settings)
-                });
+                }).catch(() => { });
             });
         });
     });
