@@ -1,34 +1,37 @@
 body {
-  width: 240px;
+  width: 250px;
   padding: 0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #1d1d1f;
-  /* Liquid Glass Base */
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  /* Apple System Font Stack */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #ffffff;
+  /* Vibrant Dark Glassmorphism */
+  background: rgba(25, 25, 25, 0.75);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
   overflow: hidden;
+  border-radius: 16px;
 }
 
 .container {
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
 }
 
 h1 {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   margin-top: 0;
   margin-bottom: 4px;
   text-align: center;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: #ffffff;
 }
 
 p {
-  font-size: 0.8rem;
-  color: #48484a;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 20px;
   text-align: center;
 }
@@ -37,66 +40,71 @@ p {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 10px;
+  padding: 14px;
+  /* Platter effect */
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
 }
 
 .setting:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .label-group {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.icon {
-  width: 18px;
-  height: 18px;
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-  stroke: #86868b;
-}
-
-/* Icon Color Fills */
-input:checked~.slider+.icon,
-/* This selector logic is based on sibling order if changed, but we will use JS classes for safety */
-.active-dark {
-  stroke: #ebb400;
-  fill: rgba(235, 180, 0, 0.2);
-}
-
-.active-extreme {
-  stroke: #0071e3;
-  fill: rgba(0, 113, 227, 0.2);
-}
-
-.setting.extreme {
-  margin-top: 8px;
-  border-top: none;
-  padding-top: 12px;
-}
-
-.warning {
-  font-size: 0.7rem;
-  color: #ff9500;
-  margin-top: 4px;
-  margin-bottom: 16px;
-  text-align: center;
+  gap: 12px;
+  font-size: 0.95rem;
   font-weight: 500;
 }
 
-/* Apple-style Toggle Switch */
+.icon {
+  width: 20px;
+  height: 20px;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  stroke: rgba(255, 255, 255, 0.4);
+  fill: none;
+}
+
+/* Icon Highlight States */
+.active-dark {
+  stroke: #ffcc00;
+  fill: rgba(255, 204, 0, 0.2);
+  filter: drop-shadow(0 0 5px rgba(255, 204, 0, 0.3));
+}
+
+.active-extreme {
+  stroke: #0A84FF;
+  fill: rgba(10, 132, 255, 0.2);
+  filter: drop-shadow(0 0 8px rgba(10, 132, 255, 0.4));
+}
+
+.setting.extreme {
+  margin-top: 6px;
+  border-top: none;
+}
+
+.warning {
+  font-size: 0.75rem;
+  color: #ff9f0a;
+  /* Apple Orange for Dark Mode */
+  margin-top: 6px;
+  margin-bottom: 18px;
+  text-align: center;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+/* Apple-style Toggle Switch Refined for Dark Mode */
 .switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 48px;
+  height: 28px;
 }
 
 .switch input {
@@ -112,25 +120,25 @@ input:checked~.slider+.icon,
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(120, 120, 128, 0.16);
+  background-color: rgba(255, 255, 255, 0.1);
   transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 20px;
-  width: 20px;
+  height: 24px;
+  width: 24px;
   left: 2px;
   bottom: 2px;
   background-color: #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
   transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 input:checked+.slider {
-  background-color: #34c759;
-  /* Apple Green for Active */
+  background-color: #30d158;
+  /* Apple Dark Theme Green */
 }
 
 input:checked+.slider:before {
@@ -147,9 +155,10 @@ input:checked+.slider:before {
 
 #status {
   text-align: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-top: 8px;
-  letter-spacing: 0.05em;
-  opacity: 0.6;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-top: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
 }

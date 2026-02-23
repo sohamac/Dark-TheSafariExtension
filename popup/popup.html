@@ -11,12 +11,12 @@
 <body>
   <div class="container">
     <h1>Quest Dark Mode</h1>
-    <p>Enable or disable dark mode across all websites.</p>
+    <p>Premium dark mode control for Safari.</p>
 
     <div class="setting">
       <div class="label-group">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
+        <svg class="icon icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
         <span>Dark Mode</span>
@@ -29,20 +29,20 @@
 
     <div class="setting extreme">
       <div class="label-group">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round">
+        <svg class="icon icon-extreme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
         </svg>
-        <span>Extreme Mode (Pro)</span>
+        <span>Extreme Mode</span>
       </div>
       <label class="switch">
         <input type="checkbox" id="extreme-mode-toggle">
         <span class="slider round"></span>
       </label>
     </div>
-    <p class="warning">⚠️ Extreme Mode may consume more battery.</p>
+    <p class="warning">⚠️ High precision mode may use more power.</p>
 
-    <div id="status">Off</div>
+    <div id="status">OFF</div>
   </div>
   <script src="popup.js"></script>
 </body>
