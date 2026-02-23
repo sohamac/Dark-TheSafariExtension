@@ -1,8 +1,36 @@
-document.getElementById('click-me').addEventListener('click', () => {
+document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('dark-mode-toggle');
     const statusEl = document.getElementById('status');
-    statusEl.textContent = 'Button clicked! Extension is working.';
-    statusEl.style.color = '#34c759'; // Apple Green
 
-    // Demonstrate communication with background or tabs
-    console.log('Popup button clicked');
+    // Load saved state
+    chrome.storage.local.get(['darkMode'], (result) => {
+        toggle.checked = result.darkMode || false;
+        updateStatusLabel(toggle.checked);
+    });
+
+    // Handle toggle change
+    toggle.addEventListener('change', () => {
+        const isEnabled = toggle.checked;
+
+        // Save to storage
+        chrome.storage.local.set({ darkMode: isEnabled });
+        updateStatusLabel(isEnabled);
+
+        // Notify all tabs
+        chrome.tabs.query({}, (tabs) => {
+            tabs.forEach(tab => {
+                chrome.tabs.sendMessage(tab.id, {
+                    action: "toggleDarkMode",
+                    enabled: isEnabled
+                }).catch(err => {
+                    // Ignore errors for tabs where extension can't run (like safari settings)
+                });
+            });
+        });
+    });
+
+    function updateStatusLabel(enabled) {
+        statusEl.textContent = enabled ? 'ON' : 'OFF';
+        statusEl.style.color = enabled ? '#0071e3' : '#86868b';
+    }
 });
