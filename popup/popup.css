@@ -1,3 +1,13 @@
+:root {
+  /* EDIT THESE TO CHANGE TRANSLUCENCY */
+  --glass-background: rgba(0, 0, 0, 0.15);
+  /* Lower last number for more transparency */
+  --glass-blur: 50px;
+  /* Increase for more frost effect */
+  --glass-saturation: 210%;
+  /* Increase to make background colors pop */
+}
+
 body {
   width: 250px;
   padding: 0;
@@ -5,10 +15,10 @@ body {
   /* Apple System Font Stack */
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #ffffff;
-  /* Vibrant Dark Glassmorphism - Maximum Translucency */
-  background: rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(50px) saturate(210%);
-  -webkit-backdrop-filter: blur(50px) saturate(210%);
+  /* Vibrant Dark Glassmorphism */
+  background: var(--glass-background);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   overflow: hidden;
   border-radius: 16px;
 }
