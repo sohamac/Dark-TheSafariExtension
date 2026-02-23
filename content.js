@@ -94,9 +94,11 @@ function createOverlay() {
   const style = document.createElement('style');
   style.textContent = `
     :host {
-      --glass-background: rgba(0, 0, 0, 0);
-      --glass-blur: 50px;
-      --glass-saturation: 210%;
+      --glass-background: rgba(0, 0, 0, 0.1); 
+      --glass-blur: 24px;
+      --glass-saturation: 180%;
+      --glass-brightness: 1.1;
+      --glass-contrast: 1.1;
       --apple-green: #30d158;
       --apple-gold: #ffcc00;
       --apple-blue: #0A84FF;
@@ -128,8 +130,8 @@ function createOverlay() {
     .glass-panel {
       padding: 20px;
       background: var(--glass-background);
-      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(var(--glass-brightness)) contrast(var(--glass-contrast));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(var(--glass-brightness)) contrast(var(--glass-contrast));
       border: 0.5px solid rgba(255, 255, 255, 0.2);
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
