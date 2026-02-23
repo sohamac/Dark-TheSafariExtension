@@ -3,18 +3,29 @@
   "name": "Quest Safari Extension",
   "version": "1.0",
   "description": "A basic Safari Web Extension template for the Quest hackathon.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "Quest Extension"
   },
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
   "content_scripts": [
     {
-      "js": ["content.js"],
-      "matches": ["<all_urls>"]
+      "js": [
+        "content.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ],
+      "run_at": "document_start"
     }
   ],
   "icons": {

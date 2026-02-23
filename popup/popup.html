@@ -1,18 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quest Extension</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
   <div class="container">
-    <h1>Quest Extension</h1>
-    <p>Welcome to your Safari extension!</p>
-    <button id="click-me">Click Me!</button>
-    <div id="status"></div>
+    <h1>Quest Dark Mode</h1>
+    <p>Enable or disable dark mode across all websites.</p>
+
+    <label class="switch">
+      <input type="checkbox" id="dark-mode-toggle">
+      <span class="slider round"></span>
+    </label>
+
+    <div id="status">Off</div>
   </div>
   <script src="popup.js"></script>
 </body>
+
 </html>
