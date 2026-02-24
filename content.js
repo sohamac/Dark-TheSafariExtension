@@ -57,7 +57,8 @@ function applyDarkMode(enabled, extreme) {
       styleEl.id = styleId;
       styleEl.textContent = `
         html { 
-          filter: invert(1) hue-rotate(180deg) !important;
+          /* Selective Color Engine: Softer inversion with contrast boost */
+          filter: invert(0.9) hue-rotate(180deg) contrast(1.1) !important;
           background-color: #ffffff !important;
           /* Cinematic Magic Transition: Thanos Snap */
           transition: filter 1.5s cubic-bezier(0.19, 1, 0.22, 1), background-color 1.5s cubic-bezier(0.19, 1, 0.22, 1) !important;
@@ -72,10 +73,9 @@ function applyDarkMode(enabled, extreme) {
       `;
       (document.head || document.documentElement).appendChild(styleEl);
 
-      // Trigger a "magic wash" effect by momentarily setting opacity or scale
       document.documentElement.animate([
         { filter: 'invert(0) hue-rotate(0deg)', opacity: 0.9 },
-        { filter: 'invert(1) hue-rotate(180deg)', opacity: 1 }
+        { filter: 'invert(0.9) hue-rotate(180deg) contrast(1.1)', opacity: 1 }
       ], {
         duration: 1500,
         easing: 'cubic-bezier(0.19, 1, 0.22, 1)'
@@ -83,7 +83,6 @@ function applyDarkMode(enabled, extreme) {
     }
 
     if (extreme) {
-      // 🔴 ENERGY OPTIMIZATION: Throttled MutationObserver 🔴
       observer = new MutationObserver(() => {
         if (mutationThrottleTimeout) return;
         mutationThrottleTimeout = setTimeout(() => {
@@ -95,9 +94,8 @@ function applyDarkMode(enabled, extreme) {
   } else {
     if (styleEl) {
       styleEl.remove();
-      // Optional: Smooth transition BACK to light
       document.documentElement.animate([
-        { filter: 'invert(1) hue-rotate(180deg)' },
+        { filter: 'invert(0.9) hue-rotate(180deg) contrast(1.1)' },
         { filter: 'invert(0) hue-rotate(0deg)' }
       ], {
         duration: 800,
@@ -107,7 +105,7 @@ function applyDarkMode(enabled, extreme) {
   }
 }
 
-// --- OVERLAY UI CORE (SECURE BY DESIGN) ---
+// --- OVERLAY UI CORE ---
 
 function createOverlay() {
   if (questOverlay) return;
@@ -128,6 +126,7 @@ function createOverlay() {
       --apple-green: #30d158;
       --apple-gold: #ffcc00;
       --apple-blue: #0A84FF;
+      --apple-purple: #AF52DE;
       --text-main: #ffffff;
       --text-sec: rgba(255, 255, 255, 0.6);
       position: fixed; top: 20px; right: 20px; z-index: 2147483647; width: 260px;
@@ -153,6 +152,7 @@ function createOverlay() {
     .icon { width: 18px; height: 18px; stroke: var(--text-sec); fill: none; transition: 0.3s; }
     .icon.active-dark { stroke: var(--apple-gold); fill: rgba(255, 204, 0, 0.2); }
     .icon.active-extreme { stroke: var(--apple-blue); fill: rgba(10, 132, 255, 0.2); }
+    .icon.active-auto { stroke: var(--apple-purple); fill: rgba(175, 82, 222, 0.2); }
     .switch { position: relative; width: 44px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -179,8 +179,7 @@ function createOverlay() {
   subtitle.className = 'subtitle';
   subtitle.textContent = 'Premium Visual Content Overlay';
 
-  // Secure Setting Factory
-  function createSetting(label, id, iconPath, iconClass) {
+  function createSetting(label, id, type, iconClass) {
     const setting = document.createElement('div');
     setting.className = 'setting';
 
@@ -193,14 +192,20 @@ function createOverlay() {
     svg.setAttribute('stroke', 'currentColor');
     svg.setAttribute('stroke-width', '2');
 
-    if (id === 'dark-toggle') {
+    if (type === 'dark') {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
       svg.appendChild(path);
-    } else {
+    } else if (type === 'extreme') {
       const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
       poly.setAttribute('points', '13 2 3 14 12 14 11 22 21 10 12 10 13 2');
       svg.appendChild(poly);
+    } else { // auto
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '12'); circle.setAttribute('cy', '12'); circle.setAttribute('r', '10');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M12 8l4 4-4 4M8 12h7');
+      svg.appendChild(circle); svg.appendChild(path);
     }
 
     const span = document.createElement('span');
@@ -228,8 +233,9 @@ function createOverlay() {
     return { setting, input, svg };
   }
 
-  const darkSet = createSetting('Dark Mode', 'dark-toggle', '', 'icon-dark');
-  const extremeSet = createSetting('Extreme Mode', 'extreme-toggle', '', 'icon-extreme');
+  const darkSet = createSetting('Manual Mode', 'dark-toggle', 'dark', 'icon-dark');
+  const extremeSet = createSetting('Extreme Mode', 'extreme-toggle', 'extreme', 'icon-extreme');
+  const autoSet = createSetting('Auto Magic', 'auto-toggle', 'auto', 'icon-auto');
 
   const warning = document.createElement('div');
   warning.className = 'warning';
@@ -243,6 +249,7 @@ function createOverlay() {
   panel.appendChild(subtitle);
   panel.appendChild(darkSet.setting);
   panel.appendChild(extremeSet.setting);
+  panel.appendChild(autoSet.setting);
   panel.appendChild(warning);
   panel.appendChild(statusLabel);
 
@@ -250,27 +257,33 @@ function createOverlay() {
   shadow.appendChild(panel);
   document.documentElement.appendChild(container);
 
-  // Sync Logic
-  chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
+  chrome.storage.local.get(['darkMode', 'extremeMode', 'autoMode'], (res) => {
     darkSet.input.checked = res.darkMode || false;
     extremeSet.input.checked = res.extremeMode || false;
-    updateUIState(darkSet.input.checked, extremeSet.input.checked);
+    autoSet.input.checked = res.autoMode || false;
+    updateUIState(darkSet.input.checked, extremeSet.input.checked, autoSet.input.checked);
   });
 
   const sync = () => {
-    chrome.storage.local.set({ darkMode: darkSet.input.checked, extremeMode: extremeSet.input.checked });
-    applyDarkMode(darkSet.input.checked, extremeSet.input.checked);
-    updateUIState(darkSet.input.checked, extremeSet.input.checked);
+    chrome.storage.local.set({
+      darkMode: darkSet.input.checked,
+      extremeMode: extremeSet.input.checked,
+      autoMode: autoSet.input.checked
+    });
+    applyDarkMode(darkSet.input.checked || (autoSet.input.checked && !isPageAlreadyDark()), extremeSet.input.checked);
+    updateUIState(darkSet.input.checked, extremeSet.input.checked, autoSet.input.checked);
   };
 
   darkSet.input.addEventListener('change', sync);
   extremeSet.input.addEventListener('change', sync);
+  autoSet.input.addEventListener('change', sync);
 
-  function updateUIState(d, e) {
-    statusLabel.textContent = d ? (e ? 'Extreme Active' : 'Active') : 'Off';
-    statusLabel.style.color = d ? 'var(--apple-green)' : 'var(--text-sec)';
+  function updateUIState(d, e, a) {
+    statusLabel.textContent = (d || a) ? (e ? 'Extreme Active' : (a ? 'Auto Magic Active' : 'Manual Active')) : 'Off';
+    statusLabel.style.color = (d || a) ? 'var(--apple-green)' : 'var(--text-sec)';
     if (d) darkSet.svg.classList.add('active-dark'); else darkSet.svg.classList.remove('active-dark');
     if (d && e) extremeSet.svg.classList.add('active-extreme'); else extremeSet.svg.classList.remove('active-extreme');
+    if (a) autoSet.svg.classList.add('active-auto'); else autoSet.svg.classList.remove('active-auto');
   }
 }
 
@@ -287,8 +300,9 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "toggleOverlay") toggleOverlay();
 });
 
-chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
-  if (res.darkMode) {
+chrome.storage.local.get(['darkMode', 'extremeMode', 'autoMode'], (res) => {
+  const shouldBeDark = res.darkMode || (res.autoMode && !isPageAlreadyDark());
+  if (shouldBeDark) {
     if (document.readyState === 'loading') {
       window.addEventListener('DOMContentLoaded', () => applyDarkMode(true, res.extremeMode));
     } else {
