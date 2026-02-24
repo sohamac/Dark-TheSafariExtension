@@ -58,17 +58,28 @@ function applyDarkMode(enabled, extreme) {
       styleEl.textContent = `
         html { 
           filter: invert(1) hue-rotate(180deg) !important;
-          background-color: #ffffff !important; 
+          background-color: #ffffff !important;
+          /* Cinematic Magic Transition: Thanos Snap */
+          transition: filter 1.5s cubic-bezier(0.19, 1, 0.22, 1), background-color 1.5s cubic-bezier(0.19, 1, 0.22, 1) !important;
         }
         img, video, canvas, [style*="background-image"], .no-invert { 
-          filter: invert(1) hue-rotate(180deg) !important; 
+          filter: invert(1) hue-rotate(180deg) !important;
+          transition: filter 1.5s cubic-bezier(0.19, 1, 0.22, 1) !important;
         }
         [class*="gradient"], [class*="overlay"], [class*="mask"] {
            filter: none !important;
         }
-        html { transition: filter 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
       `;
       (document.head || document.documentElement).appendChild(styleEl);
+
+      // Trigger a "magic wash" effect by momentarily setting opacity or scale
+      document.documentElement.animate([
+        { filter: 'invert(0) hue-rotate(0deg)', opacity: 0.9 },
+        { filter: 'invert(1) hue-rotate(180deg)', opacity: 1 }
+      ], {
+        duration: 1500,
+        easing: 'cubic-bezier(0.19, 1, 0.22, 1)'
+      });
     }
 
     if (extreme) {
@@ -76,14 +87,23 @@ function applyDarkMode(enabled, extreme) {
       observer = new MutationObserver(() => {
         if (mutationThrottleTimeout) return;
         mutationThrottleTimeout = setTimeout(() => {
-          // Future: Add targeted re-inversion logic here if needed
           mutationThrottleTimeout = null;
-        }, 1000); // Scan once per second max (Large Battery saving)
+        }, 1000);
       });
       observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
     }
   } else {
-    if (styleEl) styleEl.remove();
+    if (styleEl) {
+      styleEl.remove();
+      // Optional: Smooth transition BACK to light
+      document.documentElement.animate([
+        { filter: 'invert(1) hue-rotate(180deg)' },
+        { filter: 'invert(0) hue-rotate(0deg)' }
+      ], {
+        duration: 800,
+        easing: 'cubic-bezier(0.19, 1, 0.22, 1)'
+      });
+    }
   }
 }
 
