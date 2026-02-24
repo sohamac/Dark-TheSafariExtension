@@ -53,33 +53,51 @@ function applyDarkMode(enabled, extreme) {
     }
 
     if (!styleEl) {
+      // 1. Create the Permanent Style (Hidden initially)
       styleEl = document.createElement('style');
       styleEl.id = styleId;
       styleEl.textContent = `
         html { 
-          /* Selective Color Engine: Softer inversion with contrast boost */
-          filter: invert(0.9) hue-rotate(180deg) contrast(1.1) !important;
+          filter: invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95) !important;
           background-color: #ffffff !important;
-          /* Cinematic Magic Transition: Thanos Snap */
-          transition: filter 1.5s cubic-bezier(0.19, 1, 0.22, 1), background-color 1.5s cubic-bezier(0.19, 1, 0.22, 1) !important;
         }
         img, video, canvas, [style*="background-image"], .no-invert { 
           filter: invert(1) hue-rotate(180deg) !important;
-          transition: filter 1.5s cubic-bezier(0.19, 1, 0.22, 1) !important;
+          transition: filter 0.3s ease !important;
         }
         [class*="gradient"], [class*="overlay"], [class*="mask"] {
            filter: none !important;
         }
       `;
-      (document.head || document.documentElement).appendChild(styleEl);
 
-      document.documentElement.animate([
-        { filter: 'invert(0) hue-rotate(0deg)', opacity: 0.9 },
-        { filter: 'invert(0.9) hue-rotate(180deg) contrast(1.1)', opacity: 1 }
-      ], {
-        duration: 1500,
-        easing: 'cubic-bezier(0.19, 1, 0.22, 1)'
+      // 2. TRIGGER CINEMATIC SWEEP (Left to Right)
+      const sweep = document.createElement('div');
+      sweep.id = 'quest-snap-sweep';
+      Object.assign(sweep.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100vw',
+        height: '100vh',
+        zIndex: '2147483646',
+        pointerEvents: 'none',
+        backdropFilter: 'invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95)',
+        webkitBackdropFilter: 'invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95)',
+        clipPath: 'inset(0 100% 0 0)',
+        transition: 'clip-path 2.5s cubic-bezier(0.19, 1, 0.22, 1)'
       });
+      document.documentElement.appendChild(sweep);
+
+      // Force reflow and start sweep
+      setTimeout(() => {
+        sweep.style.clipPath = 'inset(0 0 0 0)';
+      }, 50);
+
+      // Cleanup and flip permanent style
+      setTimeout(() => {
+        (document.head || document.documentElement).appendChild(styleEl);
+        sweep.remove();
+      }, 2600);
     }
 
     if (extreme) {
@@ -94,8 +112,9 @@ function applyDarkMode(enabled, extreme) {
   } else {
     if (styleEl) {
       styleEl.remove();
+      // Smooth exit transition
       document.documentElement.animate([
-        { filter: 'invert(0.9) hue-rotate(180deg) contrast(1.1)' },
+        { filter: 'invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95)' },
         { filter: 'invert(0) hue-rotate(0deg)' }
       ], {
         duration: 800,
