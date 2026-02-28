@@ -6,7 +6,7 @@ chrome.action.onClicked.addListener((tab) => {
 
   console.log("Quest: Icon clicked, toggling UI overlay on tab:", tab.id);
 
-  chrome.tabs.sendMessage(tab.id, { action: "toggleOverlay" }, (response) => {
+  chrome.tabs.sendMessage(tab.id, { action: "toggleSmartInvert" }, (response) => {
     // Robustness: Handle messaging errors (e.g. on restricted pages like App Store)
     if (chrome.runtime.lastError) {
       console.warn("Quest: Messaging failed (expected on system pages):", chrome.runtime.lastError.message);

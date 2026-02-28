@@ -37,90 +37,245 @@ function isPageAlreadyDark() {
   return luminance < 0.4;
 }
 
-function applyDarkMode(enabled, extreme) {
-  const styleId = 'quest-dark-mode-style';
-  let styleEl = document.getElementById(styleId);
+// --- SMART INVERT ENGINE ---
 
-  if (observer) {
-    observer.disconnect();
-    observer = null;
+class SmartInvertEngine {
+  constructor() {
+    this.processedElements = new WeakSet();
+    this.styleId = 'quest-smart-invert-styles';
+    this.dynamicStyles = new Map(); // Element -> CSS string
+    this.styleElement = null;
+    this.observer = null;
+    this.isEnabled = false;
+    this.mutationThrottleTimeout = null;
+
+    // Configurable thresholds
+    this.bgLuminanceThreshold = 0.6; // Backgrounds brighter than this get darkened
+    this.textLuminanceThreshold = 0.4; // Text darker than this gets lightened
   }
 
+  // --- Color Utilities ---
+
+  parseColor(colorStr) {
+    if (!colorStr || colorStr === 'rgba(0, 0, 0, 0)' || colorStr === 'transparent') return null;
+    const match = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if (!match) return null;
+    return { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) };
+  }
+
+  getLuminance(r, g, b) {
+    // Relative luminance formula (sRGB)
+    const as = [r, g, b].map(v => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * as[0] + 0.7152 * as[1] + 0.0722 * as[2];
+  }
+
+  rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+      h = s = 0; // achromatic
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    return { h, s, l };
+  }
+
+  hslToRgb(h, s, l) {
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l; // achromatic
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+  }
+
+  // --- Inversion Logic ---
+
+  invertColor(rgbStr, type) {
+    const rgb = this.parseColor(rgbStr);
+    if (!rgb) return null;
+
+    const luminance = this.getLuminance(rgb.r, rgb.g, rgb.b);
+    let hsl = this.rgbToHsl(rgb.r, rgb.g, rgb.b);
+
+    if (type === 'bg') {
+      if (luminance > this.bgLuminanceThreshold) {
+        // Very bright background: Darken it significantly
+        // White (l=1.0) -> Dark Gray (l~0.1)
+        hsl.l = 1.0 - hsl.l;
+        if (hsl.l < 0.05) hsl.l = 0.08; // Prevent pure black for backgrounds (Apple/Google style)
+
+        // Desaturate slightly to avoid jarring bright colors on dark backgrounds
+        hsl.s = Math.min(hsl.s, 0.4);
+
+        const newRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+        return `rgb(${newRgb.r}, ${newRgb.g}, ${newRgb.b}) !important`;
+      }
+    } else if (type === 'text') {
+      if (luminance < this.textLuminanceThreshold) {
+        // Dark text: Lighten it
+        // Black (l=0.0) -> Light Gray (l~0.85)
+        hsl.l = 1.0 - hsl.l;
+        if (hsl.l > 0.95) hsl.l = 0.88; // Prevent pure white text (eye strain)
+
+        const newRgb = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+        return `rgb(${newRgb.r}, ${newRgb.g}, ${newRgb.b}) !important`;
+      }
+    } else if (type === 'border') {
+      if (luminance > this.bgLuminanceThreshold || luminance < this.textLuminanceThreshold) {
+        // Soften borders
+        return `rgba(255, 255, 255, 0.15) !important`;
+      }
+    }
+    return null;
+  }
+
+  processElement(el) {
+    if (el.nodeType !== Node.ELEMENT_NODE) return;
+
+    // Skip invisible, non-visual, or multimedia elements
+    const tag = el.tagName.toLowerCase();
+    if (['script', 'style', 'img', 'video', 'canvas', 'svg', 'iframe'].includes(tag)) return;
+    if (this.processedElements.has(el)) return;
+    this.processedElements.add(el);
+
+    const style = window.getComputedStyle(el);
+    let newStyles = [];
+
+    // Background
+    const bgStr = style.backgroundColor;
+    const newBg = this.invertColor(bgStr, 'bg');
+    if (newBg) newStyles.push(`background-color: ${newBg};`);
+
+    // Text Color
+    const textStr = style.color;
+    const newText = this.invertColor(textStr, 'text');
+    if (newText) newStyles.push(`color: ${newText};`);
+
+    // Borders
+    const borderStr = style.borderColor;
+    const newBorder = this.invertColor(borderStr, 'border');
+    if (newBorder) newStyles.push(`border-color: ${newBorder};`);
+
+    if (newStyles.length > 0) {
+      if (!el.id) el.id = 'quest-elem-' + Math.random().toString(36).substr(2, 9);
+      this.dynamicStyles.set(el.id, `#${el.id} { ${newStyles.join(' ')} }`);
+    }
+
+    // Process children
+    for (let child of el.childNodes) {
+      this.processElement(child);
+    }
+  }
+
+  applyStyles() {
+    if (!this.styleElement) {
+      this.styleElement = document.createElement('style');
+      this.styleElement.id = this.styleId;
+      (document.head || document.documentElement).appendChild(this.styleElement);
+    }
+
+    let cssText = Array.from(this.dynamicStyles.values()).join('\n');
+
+    // Add base sweep block if needed for images that *are* strictly inverted in legacy mode, 
+    // but in smart invert we leave them alone by default.
+    this.styleElement.textContent = cssText + `
+       html { background-color: #121212 !important; color: #e0e0e0 !important; }
+       body { background-color: #121212 !important; }
+    `;
+  }
+
+  walkDOM() {
+    this.processElement(document.body || document.documentElement);
+    this.applyStyles();
+  }
+
+  enable() {
+    if (this.isEnabled) return;
+    this.isEnabled = true;
+
+    // Reset state
+    this.processedElements = new WeakSet();
+    this.dynamicStyles = new Map();
+
+    // Initial walk
+    this.walkDOM();
+
+    // Observe changes
+    this.observer = new MutationObserver((mutations) => {
+      if (!this.isEnabled) return;
+      if (this.mutationThrottleTimeout) return;
+
+      this.mutationThrottleTimeout = setTimeout(() => {
+        let needsUpdate = false;
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.id !== this.styleId) {
+              this.processElement(node);
+              needsUpdate = true;
+            }
+          });
+        });
+
+        if (needsUpdate) this.applyStyles();
+        this.mutationThrottleTimeout = null;
+      }, 500); // 500ms throttle for performance
+    });
+
+    this.observer.observe(document.body || document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: false
+    });
+  }
+
+  disable() {
+    this.isEnabled = false;
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+    if (this.styleElement) {
+      this.styleElement.remove();
+      this.styleElement = null;
+    }
+    this.processedElements = new WeakSet();
+    this.dynamicStyles = new Map();
+  }
+}
+
+const engine = new SmartInvertEngine();
+
+function applyDarkMode(enabled, extreme) {
   if (enabled) {
-    if (isPageAlreadyDark()) {
-      if (styleEl) styleEl.remove();
-      return;
-    }
-
-    if (!styleEl) {
-      // 1. Create the Permanent Style (Hidden initially)
-      styleEl = document.createElement('style');
-      styleEl.id = styleId;
-      styleEl.textContent = `
-        html { 
-          filter: invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95) !important;
-          background-color: #ffffff !important;
-        }
-        img, video, canvas, [style*="background-image"], .no-invert { 
-          filter: invert(1) hue-rotate(180deg) !important;
-          transition: filter 0.3s ease !important;
-        }
-        [class*="gradient"], [class*="overlay"], [class*="mask"] {
-           filter: none !important;
-        }
-      `;
-
-      // 2. TRIGGER CINEMATIC SWEEP (Left to Right)
-      const sweep = document.createElement('div');
-      sweep.id = 'quest-snap-sweep';
-      Object.assign(sweep.style, {
-        position: 'fixed',
-        top: '0',
-        left: '0',
-        width: '100vw',
-        height: '100vh',
-        zIndex: '2147483646',
-        pointerEvents: 'none',
-        backdropFilter: 'invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95)',
-        webkitBackdropFilter: 'invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95)',
-        clipPath: 'inset(0 100% 0 0)',
-        transition: 'clip-path 2.5s cubic-bezier(0.19, 1, 0.22, 1)'
-      });
-      document.documentElement.appendChild(sweep);
-
-      // Force reflow and start sweep
-      setTimeout(() => {
-        sweep.style.clipPath = 'inset(0 0 0 0)';
-      }, 50);
-
-      // Cleanup and flip permanent style
-      setTimeout(() => {
-        (document.head || document.documentElement).appendChild(styleEl);
-        sweep.remove();
-      }, 2600);
-    }
-
-    if (extreme) {
-      observer = new MutationObserver(() => {
-        if (mutationThrottleTimeout) return;
-        mutationThrottleTimeout = setTimeout(() => {
-          mutationThrottleTimeout = null;
-        }, 1000);
-      });
-      observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
-    }
+    if (isPageAlreadyDark()) return;
+    engine.enable();
   } else {
-    if (styleEl) {
-      styleEl.remove();
-      // Smooth exit transition
-      document.documentElement.animate([
-        { filter: 'invert(1) hue-rotate(180deg) brightness(1.05) contrast(0.95)' },
-        { filter: 'invert(0) hue-rotate(0deg)' }
-      ], {
-        duration: 800,
-        easing: 'cubic-bezier(0.19, 1, 0.22, 1)'
-      });
-    }
+    engine.disable();
   }
 }
 
@@ -315,8 +470,66 @@ function toggleOverlay() {
 
 // --- MESSAGING & INITIALIZATION ---
 
+function showToast(message) {
+  let toast = document.getElementById('quest-toast-notification');
+  if (toast) toast.remove();
+
+  toast = document.createElement('div');
+  toast.id = 'quest-toast-notification';
+  toast.textContent = message;
+
+  Object.assign(toast.style, {
+    position: 'fixed',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%) scale(0.9)',
+    backgroundColor: 'rgba(28, 28, 30, 0.85)',
+    color: '#ffffff',
+    padding: '16px 32px',
+    borderRadius: '24px',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
+    fontSize: '20px',
+    fontWeight: '600',
+    letterSpacing: '-0.02em',
+    zIndex: '2147483647', // Max z-index
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+    backdropFilter: 'blur(20px)',
+    webkitBackdropFilter: 'blur(20px)',
+    border: '0.5px solid rgba(255, 255, 255, 0.15)',
+    opacity: '0',
+    pointerEvents: 'none',
+    transition: 'all 0.4s cubic-bezier(0.19, 1, 0.22, 1)'
+  });
+
+  document.documentElement.appendChild(toast);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translate(-50%, -50%) scale(1)';
+  });
+
+  // Animate out and remove
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translate(-50%, -50%) scale(0.95)';
+    setTimeout(() => toast.remove(), 400);
+  }, 2500);
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "toggleOverlay") toggleOverlay();
+  if (msg.action === "toggleSmartInvert") {
+    // Basic toggle of the dark mode state, triggered by clicking the extension icon.
+    chrome.storage.local.get(['darkMode', 'extremeMode'], (res) => {
+      const newState = !res.darkMode;
+      chrome.storage.local.set({ darkMode: newState });
+      applyDarkMode(newState, res.extremeMode);
+
+      // Show the popup notification
+      showToast(newState ? 'Dark Mode On' : 'Dark Mode Off');
+    });
+  }
 });
 
 chrome.storage.local.get(['darkMode', 'extremeMode', 'autoMode'], (res) => {
